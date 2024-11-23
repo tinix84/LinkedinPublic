@@ -13,10 +13,19 @@ from pymoo.factory import get_sampling, get_crossover, get_mutation
 from pymoo.visualization.pcp import PCP
 
 class Struct(object):
+    """
+    A simple class to convert keyword arguments into instance attributes.
+
+    Attributes:
+        **kwargs: Arbitrary keyword arguments that will be set as instance attributes.
+    """
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
-def input_design_parameters():
+def input_design_parameters() -> Struct:
+    """
+    Initializes and returns a structure containing design parameters for an electrical component.
+    """
     # design information-------------------------------------------------------
     D = Struct()             # D = structure of design paramters
     D.kpf = 0.7              # packing factor
@@ -34,6 +43,18 @@ def input_design_parameters():
     return D
 
 class MyProblem(Problem):
+    """
+    A custom optimization problem class that inherits from the Problem class.
+    Attributes:
+        D (Any): Design parameters obtained from the input_design_parameters function.
+    Methods:
+        __init__():
+            Initializes the MyProblem instance and sets the design parameters.
+        _evaluate(x, out, *args, **kwargs):
+            Evaluates the objective and constraint functions for the given input x.
+            Updates the out dictionary with the objective function values 'F' and 
+            constraint function values 'G'.
+    """
     def __init__(self):
         super().__init__()
         self.D = input_design_parameters()
@@ -45,20 +66,21 @@ class MyProblem(Problem):
 
 def eui_modesign():
     """
-    eui_modesign performs a multi-objective optimal design of a ui core 
-                  inductor based on an elementary analysis.  Used in 
-                  section 10.1 of "Power Magnetic Devices: A Multi-Objective
-                  Deign Approach" by S.D. Sudhoff
+    Perform multi-objective optimization using NSGA-II algorithm.
+    This function sets up the design space and genetic algorithm parameters,
+    and then conducts the optimization using the NSGA-II algorithm.
+    Returns:
+        res: The result of the optimization process.
     """
 
-    # setup design space
-    #               N   ds   ws   wc   lc   g
+    # setup design space as vector of design parameters for inductor
+    # list of design parameters = [N, ds, ws, wc, lc, g]
     GAP = Struct()
     GAP.gd_min = np.array([1,  1e-3, 1e-3, 1e-3, 1e-3, 1e-5])
     GAP.gd_max = np.array([1e3, 1e-1, 1e-1, 1e-1, 1e-1, 1e-2])
 
 
-    # setup genetic algorithm parameters--------------------------------------
+    # setup genetic algorithm parameters
     nobj=2                 # number of objectives
     ngen=100              # number of generations
     npop = 100  # population size
@@ -76,10 +98,10 @@ def eui_modesign():
         eliminate_duplicates=True
     )
     
-    # conduct the optimization-------------------------------------------------
+    # conduct the optimization
     res = minimize(problem, algorithm, ("n_gen", ngen), verbose=True)
 
-    # save results-------------------------------------------------------------
+    # save results
     return res
 
 def calc_inductor(x, D):
@@ -162,31 +184,6 @@ def eui_fit(x, D, fn):
     g = np.array([g1, g2, g3, g4, g5])  
     return f, g
 
-def draw_inductor():
-    # xc = x-coordinates of objects used to draw inductor(m)
-    # yc = y-coordinates of objects used to draw inductor(m)
-    # dgray = color code for dark gray
-    # lgray = color code of light gray
-    # # draw cross section of inductor
-    # figure(fn)
-    # dgray = [0.5 0.5 0.5]
-    # # color code for dark grey
-    # lgray = [0.9 0.9 0.9]
-    # xc = [-(ws/2+wc)(ws/2+wc)(ws/2+wc) - (ws/2+wc}
-    # yc = [0         0 - (ds+wc) - (ds+wc};
-    # fill(xc, yc, dgray)
-    # hold on
-    # yc = [(wc+g)(wc+g)      g            g];
-    # fill(xc, yc, dgray)
-    # xc = [-ws/2 ws/2 ws/2 - ws/2];
-    # yc = [0    0 - ds - ds];
-    # fill(xc, yc, lgray)
-    # yc = [0    0 - ds - ds]-(wc+ds);
-    # fill(xc, yc, lgray)
-    # hold off
-    # axis equal
-    pass
-
 def print_design(x, D):
     """Print in the console the design parameters
 
@@ -236,15 +233,15 @@ def lte(x, xmx):
 
         Args:
             x ([type]): a quantitity
-            xmn ([type]): minimum allowed value
+            xmx ([type]): minimum allowed value
 
         Returns:
-            [type]: = c = constraint variable - 1 if x <= xmx, 0 < c < 1 if x > xmx
+            float: = c = constraint variable - 1 if x <= xmx, 0 < c < 1 if x > xmx
         """
-    if (x <= xmx):
+    if x <= xmx:
         c = 1
     else:
-        c = 1/(1+x-xmx)
+        c = 1 / (1 + x - xmx)
 
     return c
 
