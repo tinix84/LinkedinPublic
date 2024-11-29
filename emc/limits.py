@@ -47,6 +47,10 @@ class EMCStandard:
         ax1.legend()
         ax1.grid(True)
 
+        # Add logo to the plot in background middle
+        logo = plt.imread('./logo.png')
+        fig.figimage(logo, 100, 100, alpha=0.2)
+
         plt.grid(which='minor', linestyle=':', linewidth='0.5', color='black')
         plt.savefig(self.name + ".png")
 
